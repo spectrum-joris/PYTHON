@@ -49,7 +49,7 @@ def clear_screen():
 def shutoff():
     for number in reversed(numbers):  # 3, 2, 1
         sys.stdout.write(f"\rshutting off... {number}")
-        sys.stdout.flush()            # () AANROEPEN!
+        sys.stdout.flush()
         time.sleep(timer)
     print()  # nieuwe lijn
     clear_screen()
@@ -59,12 +59,13 @@ def shutoff():
     sys.exit()
 
 def generate_report(res):
-    # Gewoon printen; geen globale 'report' check
     print(
         f"water: {res['water']}\n"
         f"milk: {res['milk']}\n"
         f"coffee: {res['coffee']}"
     )
+    time.sleep(timer)
+    start_choice()
 
 def ask_coins(coffee_choice):
     print("Please insert coins\n")
@@ -74,7 +75,6 @@ def ask_coins(coffee_choice):
     num_nickles  = int(input("How many nickles: "))
     num_pennies  = int(input("How many pennies: "))
 
-    # GEEN sum(); gewoon optellen
     credits = (
         coins["quarter"] * num_quarters +
         coins["dime"]    * num_dimes +
@@ -91,7 +91,26 @@ def return_change(money):
     print(f"And here's your change: {money:.2f}€")
     print("Thank you.")
     time.sleep(timer)
-    shutoff()
+    start_choice()
+
+def check_resources(item):
+    water = resources["water"] 
+    coffee = resources["coffee"] 
+    milk = resources["milk"]
+
+    if item == "cappuccino":
+        water -= 250
+        coffee -= 24
+        milk -= 100
+    elif item == "latte":
+        water -= 200
+        coffee -= 24
+        milk -= 150
+    else:
+        water -= 50
+        coffee -= 18
+        milk -= 0
+    return water, coffee, milk
 
 def check_credits(product, credits):
     price_map = {
@@ -101,7 +120,19 @@ def check_credits(product, credits):
     }
     price = price_map[product]
 
+    # 1) Eerst checken of er genoeg resources zouden overblijven
+    new_water, new_coffee, new_milk = check_resources(product)
+    if not (new_water >= 0 and new_coffee >= 0 and new_milk >= 0):
+        print("We're sorry. Not enough resources. Please contact the technician.")
+        return
+
+    # 2) Dan pas geld checken
     if credits >= price:
+        # 3) Nu PAS terugschrijven naar de globale dict
+        resources["water"]  = new_water
+        resources["coffee"] = new_coffee
+        resources["milk"]   = new_milk
+
         make_coffee(product)
         change = credits - price
         return_change(change)
@@ -119,10 +150,13 @@ def process_order(c):
     elif c == "off":
         shutoff()
     else:
-        print("Invalid choice. Try again later.")
+        print("Invalid choice. Try again.")
         time.sleep(timer)
-        sys.exit()
+        start_choice()
 
 # ---- start ----
-choice = input("Which coffee would you like?\nEspresso, Latte or Cappuccino\n")
-process_order(choice)
+def start_choice():
+    choice = input("Which coffee would you like?\nEspresso, Latte or Cappuccino\n")
+    process_order(choice)
+
+start_choice()
